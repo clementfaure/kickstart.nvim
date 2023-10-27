@@ -117,6 +117,7 @@ require('lazy').setup({
       -- Adds LSP completion capabilities
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
+      'hrsh7th/cmp-buffer',
 
       -- Adds a number of user-friendly snippets
       'rafamadriz/friendly-snippets',
@@ -282,21 +283,26 @@ require('lazy').setup({
   --    Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --
   --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {})
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
 -- NOTE: You can change these options as you wish!
 
+-- Theme
+vim.cmd.colorscheme 'monokai'
+
+
 -- Set highlight on search
-vim.o.hlsearch = false
+vim.o.hlsearch = true
 
 -- Make line numbers default
 vim.wo.number = true
+vim.wo.relativenumber = true
 
 -- Enable mouse mode
-vim.o.mouse = 'a'
+vim.o.mouse = ""
 
 -- Sync clipboard between OS and Neovim.
 --  Remove this option if you want your OS clipboard to remain independent.
@@ -326,6 +332,12 @@ vim.o.completeopt = 'menuone,noselect'
 -- NOTE: You should make sure your terminal supports this
 vim.o.termguicolors = true
 
+-- Enable color column
+vim.o.colorcolumn = "80"
+
+-- Disable swap
+vim.o.swapfile = false
+
 -- [[ Basic Keymaps ]]
 
 -- Keymaps for better default experience
@@ -341,6 +353,14 @@ vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous dia
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostics list' })
+
+-- Move lines auto indent
+vim.keymap.set("v", "J", ":m '>+1<CR>gv=gv", { desc = 'Move line up with auto indent' })
+vim.keymap.set("v", "K", ":m '<-2<CR>gv=gv", { desc = 'Move line down with auto indent' })
+
+-- Replace word under cursor
+vim.keymap.set("n", "<leader>p", [["_diwP]], { desc = 'Replace word under cursor' })
+vim.keymap.set("x", "<leader>p", [["_dP]], { desc = 'Replace word under cursor' })
 
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
@@ -439,7 +459,8 @@ vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = 
 vim.defer_fn(function()
   require('nvim-treesitter.configs').setup {
     -- Add languages to be installed here that you want installed for treesitter
-    ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'javascript', 'typescript', 'vimdoc', 'vim', 'bash' },
+    ensure_installed = { 'c', 'lua', 'python', 'rust', 'vimdoc', 'vim', 'bash', 'make', 'yaml', 'json', 'dockerfile',
+      'devicetree' },
 
     -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
     auto_install = false,
@@ -552,7 +573,9 @@ local on_attach = function(_, bufnr)
   vim.api.nvim_buf_create_user_command(bufnr, 'Format', function(_)
     vim.lsp.buf.format()
   end, { desc = 'Format current buffer with LSP' })
+
 end
+
 
 -- document existing key chains
 require('which-key').register {
@@ -586,19 +609,25 @@ require('mason-lspconfig').setup()
 --  If you want to override the default filetypes that your language server will attach to you can
 --  define the property 'filetypes' to the map in question.
 local servers = {
-  -- clangd = {},
-  -- gopls = {},
-  -- pyright = {},
-  -- rust_analyzer = {},
-  -- tsserver = {},
-  -- html = { filetypes = { 'html', 'twig', 'hbs'} },
-
+  clangd = {},
+  pyright = {},
+  rust_analyzer = {},
+  tsserver = {},
+  yamlls = {},
+  bashls = {},
   lua_ls = {
     Lua = {
       workspace = { checkThirdParty = false },
       telemetry = { enable = false },
       -- NOTE: toggle below to ignore Lua_LS's noisy `missing-fields` warnings
       -- diagnostics = { disable = { 'missing-fields' } },
+      format = {
+        enable = true,
+        defaultConfig = {
+          indent_style = "space",
+          indent_size = "2",
+        }
+      },
     },
   },
 }
@@ -642,7 +671,7 @@ cmp.setup {
     end,
   },
   completion = {
-    completeopt = 'menu,menuone,noinsert',
+    completeopt = 'menu,menuone,noinsert,noselect',
   },
   mapping = cmp.mapping.preset.insert {
     ['<C-n>'] = cmp.mapping.select_next_item(),
@@ -652,7 +681,7 @@ cmp.setup {
     ['<C-Space>'] = cmp.mapping.complete {},
     ['<CR>'] = cmp.mapping.confirm {
       behavior = cmp.ConfirmBehavior.Replace,
-      select = true,
+      select = false,
     },
     ['<Tab>'] = cmp.mapping(function(fallback)
       if cmp.visible() then
@@ -676,6 +705,7 @@ cmp.setup {
   sources = {
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
+    { name = 'buffer' },
     { name = 'path' },
   },
 }
